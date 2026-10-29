@@ -92,7 +92,11 @@ t_ctx2::init() {
         m_trees[treeidx]->set_gmv_row_pivot_meta(treeidx, next_row_pivot);
     }
 
-    m_rtraversal = std::make_shared<t_traversal>(rtree());
+    // [perspective-fortis] `group_by_hide_null` is for rows; the column
+    // traversal stays stock.
+    m_rtraversal = std::make_shared<t_traversal>(
+        rtree(), m_config.is_group_by_hide_null()
+    );
 
     m_ctraversal = std::make_shared<t_traversal>(ctree());
 
@@ -932,6 +936,20 @@ t_ctx2::get_row_path(t_index idx) const {
     return ctx_get_path(rtree(), m_rtraversal, idx);
 }
 
+// [perspective-fortis]
+bool
+t_ctx2::get_row_has_children(t_index idx) const {
+    PSP_VERBOSE_ASSERT(m_init, "touching uninited object");
+    return m_rtraversal->has_traversable_children(idx);
+}
+
+// [perspective-fortis]
+std::vector<bool>
+t_ctx2::get_row_last_child_flags(t_index idx) const {
+    PSP_VERBOSE_ASSERT(m_init, "touching uninited object");
+    return m_rtraversal->get_last_child_flags(idx);
+}
+
 std::vector<t_tscalar>
 t_ctx2::get_row_path(const t_tvnode& node) const {
     std::vector<t_tscalar> rval;
@@ -1215,7 +1233,9 @@ t_ctx2::reset(bool reset_expressions) {
         m_trees[treeidx]->set_gmv_row_pivot_meta(treeidx, next_row_pivot);
     }
 
-    m_rtraversal = std::make_shared<t_traversal>(rtree());
+    m_rtraversal = std::make_shared<t_traversal>(
+        rtree(), m_config.is_group_by_hide_null() // [perspective-fortis]
+    );
     m_ctraversal = std::make_shared<t_traversal>(ctree());
     if (m_leaves_only) {
         m_rtraversal->set_leaves_only(true, m_config.get_num_rpivots());

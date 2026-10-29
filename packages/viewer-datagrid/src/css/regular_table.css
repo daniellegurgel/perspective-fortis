@@ -305,14 +305,42 @@ tbody th:last-of-type {
     text-overflow: ellipsis;
 }
 
-tbody th.psp-tree-spacer {
-    background-image: linear-gradient(
-        to right,
-        transparent 9px,
-        var(--psp-inactive--border-color, #eee) 10px,
-        transparent 11px
+/* [perspective-fortis] BEGIN — Neurotrading (Danielle Gurgel), 2026-10-28.
+ * Tree toggle drawn as a box whose −/+ is made of 1px bars (not a font glyph),
+ * with crisp 1px guide lines under the centre of the box. Every measure is a
+ * whole pixel and the box size is odd, so the 1px sign and the guide line sit
+ * exactly in the middle — no half-pixel blur; the rounded corners are
+ * anti-aliased by the browser. Themeable with `--psp-tree-toggle--*` and
+ * `--psp-tree-line--color`; keep `--psp-tree-toggle--size` and
+ * `--psp-tree-toggle--sign` odd. Geometry (defaults): inset 4 + size 13 +
+ * gap 7 = 24px, the leaf indent; guide line at 1 + inset + (size - 1) / 2 =
+ * 11px of the cell's border box.
+ */
+tbody th {
+    /* `1px +`: the label cell carries a 1px (transparent) left border from
+     * row-hover.css, so its box starts at 1px + inset of its border box;
+     * spacer cells take the same x so the lines of a column coincide. */
+    --psp-tree-line--x: calc(
+        1px + var(--psp-tree-toggle--inset, 4px) +
+            (var(--psp-tree-toggle--size, 13px) - 1px) / 2
     );
+    --psp-tree-line--c: var(
+        --psp-tree-line--color,
+        var(--psp-inactive--border-color, #eee)
+    );
+    --psp-tree-line--v: linear-gradient(
+        to right,
+        transparent var(--psp-tree-line--x),
+        var(--psp-tree-line--c) var(--psp-tree-line--x),
+        var(--psp-tree-line--c) calc(var(--psp-tree-line--x) + 1px),
+        transparent calc(var(--psp-tree-line--x) + 1px)
+    );
+}
+
+tbody th.psp-tree-spacer {
+    background-image: var(--psp-tree-line--v);
     background-repeat: no-repeat;
+    background-origin: border-box;
     min-width: 20px;
     max-width: 20px;
     pointer-events: none;
@@ -322,20 +350,48 @@ regular-table:not(.flat-group-rollup-mode) {
     .psp-tree-label {
         max-width: 0px;
         min-width: 0px;
+        padding-left: var(--psp-tree-toggle--inset, 4px);
     }
 
     .psp-tree-label:before {
-        color: var(--psp--color);
-        font-family: var(--psp-button--font-family, inherit);
-        padding-right: 11px;
+        content: "";
+        display: inline-block;
+        box-sizing: border-box;
+        width: var(--psp-tree-toggle--size, 13px);
+        height: var(--psp-tree-toggle--size, 13px);
+        margin-right: var(--psp-tree-toggle--gap, 7px);
+        vertical-align: middle;
+        border: 1px solid
+            var(
+                --psp-tree-toggle--border-color,
+                var(--psp-inactive--border-color, #8b868045)
+            );
+        border-radius: var(--psp-tree-toggle--radius, 2px);
+        color: var(--psp-tree-toggle--color, var(--psp--color));
+        background-color: var(--psp-tree-toggle--background-color, transparent);
+        background-image: linear-gradient(currentColor, currentColor);
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: var(--psp-tree-toggle--sign, 7px) 1px;
     }
 
+    /* "+" = the horizontal bar of "−" plus a vertical one. */
     .psp-tree-label-expand:before {
-        content: var(--psp-label--tree-expand--content, "+");
+        background-image:
+            linear-gradient(currentColor, currentColor),
+            linear-gradient(currentColor, currentColor);
+        background-size:
+            var(--psp-tree-toggle--sign, 7px) 1px,
+            1px var(--psp-tree-toggle--sign, 7px);
     }
 
-    .psp-tree-label-collapse:before {
-        content: var(--psp-label--tree-collapse--content, "-");
+    /* An open box is joined to the guide line of its children below it. */
+    .psp-tree-label-collapse {
+        background-image: var(--psp-tree-line--v);
+        background-repeat: no-repeat;
+        background-origin: border-box;
+        background-position: 0 100%;
+        background-size: 100% calc(50% - var(--psp-tree-toggle--size, 13px) / 2);
     }
 
     .psp-tree-label-expand,
@@ -343,15 +399,215 @@ regular-table:not(.flat-group-rollup-mode) {
         cursor: pointer;
     }
 
-    .psp-tree-label:hover:before {
-        color: var(--psp-active--color);
-        text-shadow: 0px 0px 5px var(--psp-active--color);
+    /* Not while the pointer is on a row control in the same cell. */
+    .psp-tree-label:hover:not(:has(.psp-row-controls:hover)):before {
+        color: var(--psp-tree-toggle--hover-color, var(--psp-active--color));
+        border-color: var(
+            --psp-tree-toggle--hover-border-color,
+            var(--psp-active--color)
+        );
+        background-color: var(
+            --psp-tree-toggle--hover-background-color,
+            transparent
+        );
+    }
+
+    /* Tree connectors (with `group_by_hide_null`; classes from
+     * row_header.ts). In the parent's column a row draws ├ — └ when it is
+     * the last child, so the line stops at it — and the ─ goes on into its
+     * label up to its box (or, on a leaf, to where a box would end). A column
+     * whose list already ended draws nothing; one whose list goes on draws │
+     * over the whole row (stock trees shift it up 10px, which only works on
+     * their merged, many-row spacer cells); an open box drops a line to its
+     * children's │.
+     *
+     * Each line is a box of its own — an absolutely placed pseudo-element
+     * with a 1px border — not a background image. Layout puts every box edge
+     * on a whole device pixel, the same one for every cell of a column, and
+     * a 1px border is one device pixel at any zoom. Images do not: on a
+     * fractional pixel ratio (Windows at 125%/150%) a 1px line covers 1.25 or
+     * 1.5 device pixels, and each way of drawing one rounds to its own side —
+     * the │ under a box came out half a pixel off the drop above it, and a ─
+     * stuck out to the left of its │. */
+
+    /* Row separators run across the indent too — no staircase: connector
+     * cells take the label cells' 1px top border, and the │ starts above it,
+     * so it runs through every separator unbroken. Lines leave the cell
+     * (the ─ goes into the label), hence `overflow: visible`. */
+    tbody
+        th.psp-tree-spacer:is(.psp-tree-pipe, .psp-tree-gap, .psp-tree-branch) {
+        border-style: solid;
+        border-width: 0;
+        border-top-width: 1px;
+        background-image: none;
+        overflow: visible;
+    }
+
+    tbody th.psp-tree-spacer:is(.psp-tree-pipe, .psp-tree-branch)::before,
+    tbody th.psp-tree-spacer.psp-tree-branch::after,
+    .psp-tree-connected.psp-tree-label-collapse::after {
+        content: "";
+        position: absolute;
+        border: 0 solid var(--psp-tree-line--c);
+        pointer-events: none;
+    }
+
+    /* │ — from above the cell's top separator to its bottom. */
+    tbody th.psp-tree-spacer:is(.psp-tree-pipe, .psp-tree-branch)::before {
+        left: var(--psp-tree-line--x);
+        top: -1px;
+        bottom: 0;
+        border-left-width: 1px;
+    }
+
+    /* └ — the │ stops on the ─: half a pixel into it, so it meets it whatever
+     * way the pixel rounds, and never sticks out below it. */
+    tbody th.psp-tree-spacer.psp-tree-branch-last::before {
+        bottom: auto;
+        height: calc(50% + 1.5px);
+    }
+
+    /* ─ — on the row's middle below its top separator (the centre of the
+     * box), from the │ into the label: past its 1px left border, up to its
+     * box or, on a leaf, to where a box would end. It is drawn by this cell
+     * over the start of the next one, so `z-index` keeps it above the label's
+     * background. */
+    tbody th.psp-tree-spacer.psp-tree-branch::after {
+        left: var(--psp-tree-line--x);
+        right: calc(-1px - var(--psp-tree-toggle--inset, 4px));
+        top: 50%;
+        border-top-width: 1px;
+        z-index: 1;
+    }
+
+    tbody th.psp-tree-spacer.psp-tree-branch:has(+ th.psp-tree-leaf)::after {
+        right: calc(
+            -1px - var(--psp-tree-toggle--inset, 4px) -
+                var(--psp-tree-toggle--size, 13px)
+        );
+    }
+
+    /* The drop from an open box to its children's │. Absolute boxes are
+     * placed from the padding edge, inside the label's 1px left border. */
+    .psp-tree-connected.psp-tree-label-collapse {
+        background-image: none;
+    }
+
+    .psp-tree-connected.psp-tree-label-collapse::after {
+        left: calc(var(--psp-tree-line--x) - 1px);
+        top: calc(50% + var(--psp-tree-toggle--size, 13px) / 2);
+        bottom: 0;
+        border-left-width: 1px;
     }
 }
 
 .psp-tree-leaf {
-    padding-left: 24px;
+    padding-left: calc(
+        var(--psp-tree-toggle--inset, 4px) + var(--psp-tree-toggle--size, 13px) +
+            var(--psp-tree-toggle--gap, 7px)
+    );
 }
+
+/* Row controls (row_controls.ts): a round selection control and action
+ * buttons (the host's own 11px SVG glyph, no ring), 11px like the selection
+ * ring (odd, so its 1px ring and check centre on whole pixels). They sit in a
+ * fixed column at the right end of the row-header cell — the same x on every
+ * row, whatever its depth — so the indentation on the left is only the tree
+ * (box, guide lines, name). Themeable with `--psp-row-control--*` /
+ * `--psp-row-select--*`. */
+regular-table tbody th:has(> .psp-row-controls) {
+    position: relative;
+    padding-right: calc(
+        var(--psp-row-control--right, 6px) +
+            var(--psp-row-control--size, 11px) * 2 +
+            var(--psp-row-control--gap, 4px) +
+            var(--psp-row-control--text-gap, 8px)
+    );
+}
+
+.psp-row-controls {
+    position: absolute;
+    right: var(--psp-row-control--right, 6px);
+    /* (cell height - control) / 2: whole pixels on the default 23px row. */
+    top: calc((100% - var(--psp-row-control--size, 11px)) / 2);
+    display: flex;
+    align-items: center;
+    gap: var(--psp-row-control--gap, 4px);
+}
+
+.psp-row-select,
+.psp-row-action {
+    box-sizing: border-box;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: var(--psp-row-control--size, 11px);
+    height: var(--psp-row-control--size, 11px);
+    margin: 0;
+    padding: 0;
+    border: none;
+    background-color: transparent;
+    color: var(--psp-row-control--color, var(--psp--color));
+    font: inherit;
+    line-height: 0;
+    cursor: pointer;
+}
+
+.psp-row-select {
+    border: 1px solid
+        var(
+            --psp-row-control--border-color,
+            var(--psp-inactive--border-color, #8b868045)
+        );
+    border-radius: 50%;
+    background-color: var(--psp-row-control--background-color, transparent);
+}
+
+.psp-row-select:hover {
+    border-color: var(
+        --psp-row-control--hover-border-color,
+        var(--psp-active--color)
+    );
+}
+
+.psp-row-action:hover {
+    color: var(--psp-row-control--hover-color, var(--psp-active--color));
+}
+
+.psp-row-select:focus-visible,
+.psp-row-action:focus-visible {
+    outline: 1px solid var(--psp-active--color);
+    outline-offset: 1px;
+}
+
+/* Selected: filled ring with a check mark (a vector mask, anti-aliased). */
+.psp-row-select[aria-checked="true"] {
+    border-color: var(--psp-row-select--checked-color, var(--psp-active--color));
+    background-color: var(
+        --psp-row-select--checked-color,
+        var(--psp-active--color)
+    );
+}
+
+.psp-row-select[aria-checked="true"]::after {
+    content: "";
+    width: var(--psp-row-control--glyph-size, 7px);
+    height: var(--psp-row-control--glyph-size, 7px);
+    background-color: var(--psp-row-select--check-color, #ffffff);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 7'%3E%3Cpath d='M1.1 3.7l1.6 1.6 3.2-3.4' fill='none' stroke='%23000' stroke-width='1.25' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+        center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 7'%3E%3Cpath d='M1.1 3.7l1.6 1.6 3.2-3.4' fill='none' stroke='%23000' stroke-width='1.25' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+        center / contain no-repeat;
+}
+
+/* The action's own SVG glyph fills the button. */
+.psp-row-action svg {
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+/* [perspective-fortis] END */
 
 .psp-align-right {
     text-align: right;

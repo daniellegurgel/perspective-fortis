@@ -628,6 +628,9 @@ message ViewConfig {
     optional GroupRollupMode group_rollup_mode = 10;
     map<string, WindowSpec> windows = 11;
     optional SplitRollupMode split_rollup_mode = 12;
+    // [perspective-fortis] Ragged hierarchies: a null `group_by` value ends
+    // the row at the previous level (no null group row). Rows only.
+    optional bool group_by_hide_null = 13;
 
     message AggList {
         repeated string aggregations = 1;

@@ -42,8 +42,11 @@ import type {
     ColumnsConfig,
     ResolvedColumnsConfig,
     Align,
+    RowAction,
+    RowControls,
 } from "../types.js";
 import { RegularTableElement } from "regular-table";
+import { apply_row_controls } from "../style_handlers/table_cell/row_controls.js"; // [perspective-fortis]
 
 type RenderTarget = "shadow" | "light";
 
@@ -82,6 +85,10 @@ export class HTMLPerspectiveViewerDatagridPluginElement
     _row_height?: number;
     _zebra_rows: number = 0;
     _zebra_color?: string;
+    // [perspective-fortis] Row controls, set by `setRowControls()`.
+    _row_selection: boolean = false;
+    _selected_rows: Set<string> = new Set();
+    _row_actions: RowAction[] = [];
     _column_overrides: Map<string, number> = new Map();
     _initialized?: boolean;
     _reset_scroll_top?: boolean;
@@ -360,6 +367,17 @@ export class HTMLPerspectiveViewerDatagridPluginElement
 
     restore(token: DatagridPluginConfig, columns_config?: ColumnsConfig): void {
         return restore.call(this, token, columns_config ?? {});
+    }
+
+    /**
+     * [perspective-fortis] Set the host-driven row controls (selection
+     * control, selected rows, action buttons) and redraw — see `RowControls`.
+     */
+    async setRowControls(controls: RowControls): Promise<void> {
+        apply_row_controls.call(this, controls);
+        if (this._initialized) {
+            await this.regular_table.draw({ preserve_width: true });
+        }
     }
 
     async deselect(): Promise<void> {

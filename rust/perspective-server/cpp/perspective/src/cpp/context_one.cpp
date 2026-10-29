@@ -42,7 +42,9 @@ t_ctx1::init() {
         pivots, m_config.get_aggregates(), m_schema, m_config
     );
     m_tree->init();
-    m_traversal = std::make_shared<t_traversal>(m_tree);
+    m_traversal = std::make_shared<t_traversal>(
+        m_tree, m_config.is_group_by_hide_null() // [perspective-fortis]
+    );
 
     // Each context stores its own expression columns in separate
     // `t_data_table`s so that each context's expressions are isolated
@@ -393,6 +395,20 @@ t_ctx1::get_row_path(t_index idx) const {
     return ctx_get_path(m_tree, m_traversal, idx);
 }
 
+// [perspective-fortis]
+bool
+t_ctx1::get_row_has_children(t_index idx) const {
+    PSP_VERBOSE_ASSERT(m_init, "touching uninited object");
+    return m_traversal->has_traversable_children(idx);
+}
+
+// [perspective-fortis]
+std::vector<bool>
+t_ctx1::get_row_last_child_flags(t_index idx) const {
+    PSP_VERBOSE_ASSERT(m_init, "touching uninited object");
+    return m_traversal->get_last_child_flags(idx);
+}
+
 void
 t_ctx1::reset_sortby() {
     PSP_TRACE_SENTINEL();
@@ -573,7 +589,9 @@ t_ctx1::reset(bool reset_expressions) {
     );
     m_tree->init();
     m_tree->set_deltas_enabled(get_feature_state(CTX_FEAT_DELTA));
-    m_traversal = std::make_shared<t_traversal>(m_tree);
+    m_traversal = std::make_shared<t_traversal>(
+        m_tree, m_config.is_group_by_hide_null() // [perspective-fortis]
+    );
     if (m_leaves_only) {
         m_traversal->set_leaves_only(true, m_config.get_num_rpivots());
     }

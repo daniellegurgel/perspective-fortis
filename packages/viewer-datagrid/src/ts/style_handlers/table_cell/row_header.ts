@@ -16,6 +16,7 @@ import {
 } from "regular-table/dist/esm/types.js";
 import type { DatagridModel } from "../../types.js";
 import { RegularTableElement } from "regular-table";
+import { render_row_controls } from "./row_controls.js"; // [perspective-fortis]
 
 /**
  * Classify a `<th>` row-header cell as a tree label, leaf or indent spacer by
@@ -32,7 +33,13 @@ export function cell_style_row_header(
     const label_x = is_flat ? x : last_defined_index(metadata.row_header);
     const is_label = metadata.value !== undefined && x === label_x;
     const is_spacer = !is_flat && x < label_x;
-    const is_leaf = x >= model._config.group_by.length;
+    // [perspective-fortis] With `group_by_hide_null`, a row that ends before
+    // the last level (e.g. an account with no sub-accounts) is a leaf too:
+    // no +/- when there is nothing to open.
+    const has_children =
+        model._has_children?.[(metadata.y ?? 0) - (metadata.y0 ?? 0)];
+    const is_leaf =
+        x >= model._config.group_by.length || has_children === false;
     const next = regularTable.getMeta({
         dx: 0,
         dy: (metadata.y ?? 0) - (metadata.y0 ?? 0) + 1,
@@ -55,6 +62,32 @@ export function cell_style_row_header(
         is_label && !is_leaf && is_collapse,
     );
     td.classList.toggle("psp-tree-leaf", is_label && is_leaf);
+
+    // [perspective-fortis] Tree connectors, from the row's "last child"
+    // flags (`_tree_last`, depth 1 first; the label sits at x = depth). In the
+    // column of its parent a row draws ├ (or └ when it is the last child),
+    // whose ─ runs on to its box or name; in each column further left, │
+    // while that ancestor's list goes on below, else nothing. A connected
+    // label — the root's too — drops a line from its open box.
+    const last_flags = model._tree_last?.[
+        (metadata.y ?? 0) - (metadata.y0 ?? 0)
+    ];
+    const connected = !is_flat && Array.isArray(last_flags);
+    const connect = connected && label_x > 0;
+    const is_branch = connect && is_spacer && x === label_x - 1;
+    const is_gap = connect && is_spacer && x < label_x - 1 && !!last_flags[x];
+    const is_pipe = connect && is_spacer && x < label_x - 1 && !last_flags[x];
+    td.classList.toggle("psp-tree-pipe", is_pipe);
+    td.classList.toggle("psp-tree-branch", is_branch);
+    td.classList.toggle(
+        "psp-tree-branch-last",
+        is_branch && !!last_flags?.[label_x - 1],
+    );
+    td.classList.toggle("psp-tree-gap", is_gap);
+    td.classList.toggle("psp-tree-connected", connected && is_label);
+
+    // [perspective-fortis] Selection / action controls (opt-in per grid).
+    render_row_controls(model, td, metadata, is_label && !is_flat);
 }
 
 function last_defined_index(row_header: unknown[] | undefined): number {

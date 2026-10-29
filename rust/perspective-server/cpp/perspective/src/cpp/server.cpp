@@ -155,6 +155,11 @@ make_context(
         view_config->get_windows()
     );
     cfg.set_backing_store(table->get_backing_store());
+    // [perspective-fortis] Tree rows only: `flat` and `total` stay stock.
+    cfg.set_group_by_hide_null(
+        view_config->is_group_by_hide_null() && !view_config->is_leaves_only()
+        && !view_config->is_total_only()
+    );
     auto ctx1 = std::make_shared<t_ctx1>(*schema, cfg);
 
     ctx1->init();
@@ -219,6 +224,12 @@ make_context(
     );
     cfg.set_backing_store(table->get_backing_store());
     cfg.set_split_rollup(split_rollup);
+    // [perspective-fortis] Tree rows only: `flat` and `total` stay stock. The
+    // context applies it to the row traversal, never to the column one.
+    cfg.set_group_by_hide_null(
+        view_config->is_group_by_hide_null() && !view_config->is_leaves_only()
+        && !view_config->is_total_only()
+    );
     auto ctx2 = std::make_shared<t_ctx2>(*schema, cfg);
 
     ctx2->init();
@@ -2873,6 +2884,11 @@ ProtoServer::_handle_request(std::uint32_t client_id, Request&& req) {
                 config->set_row_pivot_depth(cfg.group_by_depth());
             }
 
+            // [perspective-fortis]
+            if (cfg.has_group_by_hide_null()) {
+                config->set_group_by_hide_null(cfg.group_by_hide_null());
+            }
+
             std::uint32_t sides;
 
             if (!group_by.empty() || !split_by.empty()) {
@@ -3218,6 +3234,12 @@ ProtoServer::_handle_request(std::uint32_t client_id, Request&& req) {
                     ? proto::SplitRollupMode::SPLIT_ROLLUP_MODE_ROLLUP
                     : proto::SplitRollupMode::SPLIT_ROLLUP_MODE_FLAT
             );
+
+            // [perspective-fortis] Only when set, so the default config reads
+            // back exactly as in stock Perspective.
+            if (view_config->is_group_by_hide_null()) {
+                view_config_proto->set_group_by_hide_null(true);
+            }
 
             for (const auto& expr : view_config->get_expressions()) {
                 auto* proto_exprs = view_config_proto->mutable_expressions();

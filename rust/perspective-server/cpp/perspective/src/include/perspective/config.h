@@ -221,6 +221,18 @@ public:
         return m_split_rollup;
     }
 
+    // [perspective-fortis] `group_by_hide_null`: the row traversal leaves out
+    // null groups (ragged hierarchies). Rows only, never columns.
+    inline void
+    set_group_by_hide_null(bool hide_null) {
+        m_group_by_hide_null = hide_null;
+    }
+
+    inline bool
+    is_group_by_hide_null() const {
+        return m_group_by_hide_null;
+    }
+
     // The backing store for any persistent storage created by the context built
     // from this config (currently the expression `m_master` table). Inherited
     // from the parent `Table`'s backing store. Defaults to memory.
@@ -266,6 +278,7 @@ private:
     t_fmode m_fmode;
     bool m_has_pkey_agg;
     bool m_split_rollup = false;
+    bool m_group_by_hide_null = false; // [perspective-fortis]
     t_backing_store m_backing_store = BACKING_STORE_MEMORY;
 };
 

@@ -35,7 +35,21 @@ class t_ctx2;
 
 class t_traversal {
 public:
-    t_traversal(const std::shared_ptr<const t_stree>& tree);
+    // [perspective-fortis] `skip_null_groups`: see `m_skip_null_groups`.
+    explicit t_traversal(
+        const std::shared_ptr<const t_stree>& tree,
+        bool skip_null_groups = false
+    );
+
+    // [perspective-fortis] Whether the row at traversal index `tvidx` has
+    // children the traversal would show (always counts all children when
+    // `m_skip_null_groups` is off).
+    bool has_traversable_children(t_index tvidx) const;
+
+    // [perspective-fortis] For the row at `tvidx`, from depth 1 down to its
+    // own depth: whether the node at that depth on its path is the last
+    // shown child of its parent. Lets a grid draw tree connectors (│ ├ └).
+    std::vector<bool> get_last_child_flags(t_index tvidx) const;
 
     t_index expand_node(t_index exp_idx);
 
@@ -141,6 +155,14 @@ public:
     void rebuild_for_total();
 
 private:
+    // [perspective-fortis] Children of tree node `tnid` that the traversal
+    // shows. When `m_skip_null_groups` is set, a child whose group-by value is
+    // null is left out: its rows still roll up into `tnid`, but it gets no
+    // row (ragged hierarchies). See traversal.cpp.
+    void
+    get_traversable_child_nodes(t_uindex tnid, t_stnode_vec& out) const;
+    t_uindex get_num_traversable_children(t_uindex tnid) const;
+
     void collect_leaves(
         t_uindex tnid,
         t_uindex current_depth,
@@ -154,6 +176,10 @@ private:
     bool m_leaves_only = false;
     t_uindex m_leaf_depth = 0;
     bool m_total_only = false;
+    // [perspective-fortis] Set from `ViewConfig::group_by_hide_null`, and only
+    // for the row traversal of a tree view (see `make_context` in
+    // server.cpp). Off by default: stock Perspective behavior.
+    bool m_skip_null_groups = false;
 };
 
 /**

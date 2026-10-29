@@ -153,6 +153,14 @@ export function createDataListener(
                     .fill(null)
                     .map((_, index) => [index + y0]);
 
+            // [perspective-fortis] Present only with `group_by_hide_null`.
+            this._has_children = columns.__HAS_CHILDREN__ as
+                | boolean[]
+                | undefined;
+            this._tree_last = columns.__TREE_LAST__ as
+                | boolean[][]
+                | undefined;
+
             this._reverse_columns = this._column_paths
                 .slice(x0, x1)
                 .reduce((acc, x, i) => {

@@ -2705,6 +2705,34 @@ View<t_ctx1>::to_columns(
         writer.EndArray();
     }
 
+    // [perspective-fortis] With `group_by_hide_null`, say which rows have
+    // children the tree shows, so the grid only draws +/- where there is
+    // something to open. Absent otherwise (stock output).
+    if (m_ctx->get_config().is_group_by_hide_null()) {
+        writer.Key("__HAS_CHILDREN__");
+        writer.StartArray();
+        for (auto r = start_row; r < end_row; ++r) {
+            writer.Bool(m_ctx->get_row_has_children(r));
+        }
+
+        writer.EndArray();
+
+        // ... and, per row, which nodes of its path are last children
+        // (`t_traversal::get_last_child_flags`), for tree connectors.
+        writer.Key("__TREE_LAST__");
+        writer.StartArray();
+        for (auto r = start_row; r < end_row; ++r) {
+            writer.StartArray();
+            for (const bool last : m_ctx->get_row_last_child_flags(r)) {
+                writer.Bool(last);
+            }
+
+            writer.EndArray();
+        }
+
+        writer.EndArray();
+    }
+
     // Hidden columns are always at the end of the column names
     // list, and we need to skip them from the output.
     for (auto c = start_col + 1; c < end_col; ++c) {
@@ -2771,6 +2799,30 @@ View<t_ctx2>::to_columns(
             for (auto entry = row_path.size(); entry > 0; entry--) {
                 const t_tscalar& scalar = row_path[entry - 1];
                 write_scalar(scalar, is_formatted, writer);
+            }
+
+            writer.EndArray();
+        }
+
+        writer.EndArray();
+    }
+
+    // [perspective-fortis] See `View<t_ctx1>::to_columns`.
+    if (has_row_path && m_ctx->get_config().is_group_by_hide_null()) {
+        writer.Key("__HAS_CHILDREN__");
+        writer.StartArray();
+        for (auto r = start_row; r < end_row; ++r) {
+            writer.Bool(m_ctx->get_row_has_children(r));
+        }
+
+        writer.EndArray();
+
+        writer.Key("__TREE_LAST__");
+        writer.StartArray();
+        for (auto r = start_row; r < end_row; ++r) {
+            writer.StartArray();
+            for (const bool last : m_ctx->get_row_last_child_flags(r)) {
+                writer.Bool(last);
             }
 
             writer.EndArray();

@@ -346,6 +346,18 @@ t_view_config::is_split_rollup() const {
     return m_split_rollup;
 }
 
+// [perspective-fortis]
+void
+t_view_config::set_group_by_hide_null(bool hide_null) {
+    m_group_by_hide_null = hide_null;
+}
+
+// [perspective-fortis]
+bool
+t_view_config::is_group_by_hide_null() const {
+    return m_group_by_hide_null;
+}
+
 std::int32_t
 t_view_config::get_row_pivot_depth() const {
     PSP_VERBOSE_ASSERT(m_init, "touching uninited object");

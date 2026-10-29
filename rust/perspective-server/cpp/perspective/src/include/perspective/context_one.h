@@ -42,6 +42,13 @@ public:
     t_tscalar get_aggregate_name(t_uindex idx) const;
     std::vector<t_aggspec> get_aggregates() const;
     std::vector<t_tscalar> get_row_path(t_index idx) const;
+
+    // [perspective-fortis] Whether row `idx` has children the traversal
+    // shows (used with `group_by_hide_null`).
+    bool get_row_has_children(t_index idx) const;
+
+    // [perspective-fortis] See `t_traversal::get_last_child_flags`.
+    std::vector<bool> get_row_last_child_flags(t_index idx) const;
     void set_depth(t_depth depth);
     void set_leaves_only(bool enabled);
     void set_total_only(bool enabled);

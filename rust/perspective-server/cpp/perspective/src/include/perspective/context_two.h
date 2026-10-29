@@ -43,6 +43,13 @@ public:
     t_uindex get_num_view_columns() const;
 
     std::vector<t_tscalar> get_row_path(t_index idx) const;
+
+    // [perspective-fortis] Whether row `idx` has children the row traversal
+    // shows (used with `group_by_hide_null`).
+    bool get_row_has_children(t_index idx) const;
+
+    // [perspective-fortis] See `t_traversal::get_last_child_flags`.
+    std::vector<bool> get_row_last_child_flags(t_index idx) const;
     std::vector<t_tscalar> get_row_path(const t_tvnode& node) const;
 
     std::vector<t_tscalar> get_column_path(t_index idx) const;

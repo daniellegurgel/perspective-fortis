@@ -130,6 +130,10 @@ public:
     bool is_total_only() const;
     bool is_split_rollup() const;
 
+    // [perspective-fortis] `group_by_hide_null` (see `t_config`).
+    void set_group_by_hide_null(bool hide_null);
+    bool is_group_by_hide_null() const;
+
     std::int32_t get_row_pivot_depth() const;
     std::int32_t get_column_pivot_depth() const;
 
@@ -253,5 +257,6 @@ private:
     bool m_leaves_only;
     bool m_total_only;
     bool m_split_rollup;
+    bool m_group_by_hide_null = false; // [perspective-fortis]
 };
 } // end namespace perspective

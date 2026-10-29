@@ -46,9 +46,15 @@ export function* format_tree_header_row_path(
     for (const path of paths) {
         const fullPath: unknown[] = ["TOTAL", ...path];
         const last = fullPath[fullPath.length - 1];
-        let newPath: RowHeaderCell[] = fullPath
-            .slice(0, fullPath.length - 1)
-            .fill("") as string[];
+        // [perspective-fortis] With tree connectors (`_tree_last`), each
+        // indent cell must stay its own cell — `regular-table` merges equal
+        // neighbours, and a merged block cannot draw one row's ├ or └ — so
+        // each gets a distinct, blank value.
+        let newPath: RowHeaderCell[] = this._tree_last
+            ? fullPath.slice(0, fullPath.length - 1).map(() => ({
+                  toString: () => "",
+              }))
+            : (fullPath.slice(0, fullPath.length - 1).fill("") as string[]);
         const formatted = format_cell.call(
             this,
             row_headers[newPath.length - 1],

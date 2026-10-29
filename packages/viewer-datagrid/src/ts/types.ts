@@ -446,6 +446,40 @@ export interface DatagridPluginConfig {
     column_size_override?: Record<string, number>;
 }
 
+/**
+ * [perspective-fortis] Host-driven controls on every tree row but the grand
+ * total, set with `setRowControls()` on the plugin element. Not part of
+ * `plugin_config`: the selection is the host's runtime state, not a grid
+ * setting to persist.
+ */
+export interface RowControls {
+    /**
+     * Show the round selection control. Clicking it dispatches
+     * `perspective-row-select` (`{ row_path, selected }`); the host owns the
+     * selection and sends it back in `selected_rows`.
+     */
+    selection?: boolean;
+
+    /** Row paths shown as selected. */
+    selected_rows?: unknown[][];
+
+    /**
+     * Action buttons after the selection control. Clicking one dispatches
+     * `perspective-row-action` (`{ action, row_path }`).
+     */
+    actions?: RowAction[];
+}
+
+/** [perspective-fortis] A per-row action button (see `RowControls`). */
+export interface RowAction {
+    /** Sent back as `action` in `perspective-row-action`. */
+    id: string;
+    /** Accessible name and tooltip. */
+    label: string;
+    /** SVG markup of the glyph drawn inside the round button. */
+    icon: string;
+}
+
 export type Schema = Record<string, ColumnType>;
 
 // Model object stored on regular-table
@@ -470,6 +504,13 @@ export interface DatagridModel {
     _window_schema: Schema;
     _theme: string;
     _ids: unknown[][];
+    /// [perspective-fortis] Per-row "has children the tree shows" for the
+    /// current window, sent by the engine with `group_by_hide_null`;
+    /// `undefined` otherwise (stock behavior).
+    _has_children?: boolean[];
+    /// [perspective-fortis] Per-row "last child" flags of each path node,
+    /// depth 1 first, for the tree connectors (`group_by_hide_null` only).
+    _tree_last?: boolean[][];
     _plugin_background: number[];
     _color: ColorRecord;
     _pos_fg_color: ColorRecord;
@@ -521,6 +562,13 @@ export interface DatagridModel {
 
     /** `plugin_config.align`, mirrored from the plugin element. */
     _align?: Align;
+
+    /** [perspective-fortis] `RowControls.selection`, mirrored. */
+    _row_selection: boolean;
+    /** [perspective-fortis] `RowControls.selected_rows`, as JSON keys. */
+    _selected_rows: Set<string>;
+    /** [perspective-fortis] `RowControls.actions`, mirrored. */
+    _row_actions: RowAction[];
     _tree_selection_id?: unknown[];
     _last_insert_configs?: ViewConfigUpdate[];
     _selection_state: SelectionState;
@@ -622,6 +670,10 @@ export interface DatagridPluginElement extends HTMLElement {
     _row_height?: number;
     _zebra_rows: number;
     _zebra_color?: string;
+    // [perspective-fortis] See `RowControls` / `setRowControls()`.
+    _row_selection?: boolean;
+    _selected_rows?: Set<string>;
+    _row_actions?: RowAction[];
     _column_overrides: Map<string, number>;
     _initialized?: boolean;
     _reset_scroll_top?: boolean;

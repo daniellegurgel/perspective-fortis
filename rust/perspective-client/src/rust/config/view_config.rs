@@ -152,6 +152,11 @@ pub struct ViewConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub group_by_depth: Option<u32>,
+
+    // [perspective-fortis] See `ViewConfigUpdate::group_by_hide_null`.
+    #[serde(skip_serializing_if = "is_default_value")]
+    #[serde(default)]
+    pub group_by_hide_null: bool,
 }
 
 fn is_default_value<A: Default + PartialEq>(value: &A) -> bool {
@@ -296,6 +301,19 @@ pub struct ViewConfigUpdate {
     #[serde(default)]
     #[ts(optional)]
     pub split_rollup_mode: Option<SplitRollupMode>,
+
+    /// [perspective-fortis] Ragged hierarchies (e.g. a chart of accounts).
+    /// When `true`, a row whose `group_by` value is `null` at some level ends
+    /// at the previous level: no `null` group row is shown under its parent,
+    /// though its values still count in the parent's aggregate (pair it with
+    /// an aggregate such as `["min by", [<depth column>]]` so the parent shows
+    /// its own value). Applies to the rows of the tree only: `split_by`
+    /// columns and `group_rollup_mode: "flat"` / `"total"` are unaffected.
+    /// Defaults to `false` (stock Perspective behavior).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    #[ts(optional)]
+    pub group_by_hide_null: Option<bool>,
 }
 
 impl From<ViewConfigUpdate> for proto::ViewConfig {
@@ -347,6 +365,7 @@ impl From<ViewConfigUpdate> for proto::ViewConfig {
             split_rollup_mode: value
                 .split_rollup_mode
                 .map(|x| proto::SplitRollupMode::from(x).into()),
+            group_by_hide_null: value.group_by_hide_null, // [perspective-fortis]
         }
     }
 }
@@ -384,6 +403,7 @@ impl From<ViewConfig> for ViewConfigUpdate {
             group_by_depth: value.group_by_depth,
             group_rollup_mode: Some(value.group_rollup_mode),
             split_rollup_mode: Some(value.split_rollup_mode),
+            group_by_hide_null: Some(value.group_by_hide_null), // [perspective-fortis]
         }
     }
 }
@@ -432,6 +452,7 @@ impl From<proto::ViewConfig> for ViewConfig {
                 .and_then(|x| x.ok())
                 .map(|x| x.into())
                 .unwrap_or_default(),
+            group_by_hide_null: value.group_by_hide_null.unwrap_or_default(), // [perspective-fortis]
         }
     }
 }
@@ -451,6 +472,7 @@ impl From<ViewConfigUpdate> for ViewConfig {
             group_by_depth: value.group_by_depth,
             group_rollup_mode: value.group_rollup_mode.unwrap_or_default(),
             split_rollup_mode: value.split_rollup_mode.unwrap_or_default(),
+            group_by_hide_null: value.group_by_hide_null.unwrap_or_default(), // [perspective-fortis]
         }
     }
 }
@@ -497,6 +519,7 @@ impl From<proto::ViewConfig> for ViewConfigUpdate {
                 .split_rollup_mode
                 .and_then(|x| proto::SplitRollupMode::try_from(x).ok())
                 .map(|x| x.into()),
+            group_by_hide_null: value.group_by_hide_null, // [perspective-fortis]
         }
     }
 }
@@ -554,6 +577,7 @@ impl ViewConfig {
         changed = Self::_apply(&mut self.windows, update.windows) || changed;
         changed = Self::_apply(&mut self.group_rollup_mode, update.group_rollup_mode) || changed;
         changed = Self::_apply(&mut self.split_rollup_mode, update.split_rollup_mode) || changed;
+        changed = Self::_apply(&mut self.group_by_hide_null, update.group_by_hide_null) || changed; // [perspective-fortis]
         if self.group_rollup_mode == GroupRollupMode::Total && !self.group_by.is_empty() {
             tracing::info!("`total` incompatible with `group_by`");
             changed = true;

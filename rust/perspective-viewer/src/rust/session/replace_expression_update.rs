@@ -128,6 +128,7 @@ pub impl ViewConfig {
             group_rollup_mode: None,
             split_rollup_mode: None,
             windows: None,
+            group_by_hide_null: None, // [perspective-fortis] keep as is
         }
     }
 }

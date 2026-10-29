@@ -36,11 +36,19 @@
  *                          we cover it defensively in case a future
  *                          backend leaks it.
  *
+ *   - `__HAS_CHILDREN__` — [perspective-fortis] per-row flag sent with
+ *                          `group_by_hide_null`: does the row have children
+ *                          the tree shows.
+ *   - `__TREE_LAST__`    — [perspective-fortis] per-row "last child" flags
+ *                          of its path, sent with `group_by_hide_null`, for
+ *                          the tree connectors.
+ *
  * User columns named with leading/trailing double-underscores (e.g.
  * `__user_col__`) are *not* matched — the regex requires the exact
  * stems above.
  */
-const META_COLUMN_RE = /^__(?:ROW_PATH(?:_\d+)?|ID|GROUPING_ID)__$/;
+const META_COLUMN_RE =
+    /^__(?:ROW_PATH(?:_\d+)?|ID|GROUPING_ID|HAS_CHILDREN|TREE_LAST)__$/;
 
 export function isMetaColumn(name: string): boolean {
     return META_COLUMN_RE.test(name);

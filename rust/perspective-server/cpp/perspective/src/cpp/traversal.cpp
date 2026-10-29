@@ -16,6 +16,7 @@
 #include <perspective/arg_sort.h>
 #include <perspective/sort_specification.h>
 #include <tsl/hopscotch_set.h>
+#include <algorithm> // [perspective-fortis] std::remove_if
 
 namespace perspective {
 
@@ -33,12 +34,80 @@ t_vdnode::t_vdnode(bool expanded, bool has_children) :
     m_expanded(static_cast<t_index>(expanded)),
     m_has_children(has_children) {}
 
-t_traversal::t_traversal(const std::shared_ptr<const t_stree>& tree) :
-    m_tree(tree) {
+t_traversal::t_traversal(
+    const std::shared_ptr<const t_stree>& tree, bool skip_null_groups
+) :
+    m_tree(tree),
+    m_skip_null_groups(skip_null_groups) { // [perspective-fortis]
     t_stnode_vec rchildren;
-    tree->get_child_nodes(0, rchildren);
+    get_traversable_child_nodes(0, rchildren); // [perspective-fortis]
     populate_root_children(rchildren);
 }
+
+// [perspective-fortis] BEGIN — Neurotrading (Danielle Gurgel), 2026-10-28.
+// Ragged hierarchies (e.g. a chart of accounts): a row whose group_by value
+// is null at some level ends at the previous level. The tree still builds the
+// null group and rolls its rows up into the parent, so aggregates are
+// untouched; the traversal just never shows it, and the parent gets no empty
+// child row. Every place that reads a node's children for the traversal goes
+// through `get_traversable_child_nodes` / `get_num_traversable_children`.
+namespace {
+bool
+is_null_group(const t_stnode& node) {
+    return !node.m_value.is_valid() || node.m_value.is_none();
+}
+
+void
+drop_null_groups(t_stnode_vec& nodes) {
+    nodes.erase(
+        std::remove_if(nodes.begin(), nodes.end(), is_null_group), nodes.end()
+    );
+}
+} // namespace
+
+void
+t_traversal::get_traversable_child_nodes(t_uindex tnid, t_stnode_vec& out)
+    const {
+    m_tree->get_child_nodes(tnid, out);
+    if (m_skip_null_groups) {
+        drop_null_groups(out);
+    }
+}
+
+t_uindex
+t_traversal::get_num_traversable_children(t_uindex tnid) const {
+    if (!m_skip_null_groups) {
+        return m_tree->get_num_children(tnid);
+    }
+
+    t_stnode_vec children;
+    get_traversable_child_nodes(tnid, children);
+    return children.size();
+}
+
+bool
+t_traversal::has_traversable_children(t_index tvidx) const {
+    return get_num_traversable_children(get_tree_index(tvidx)) > 0;
+}
+
+std::vector<bool>
+t_traversal::get_last_child_flags(t_index tvidx) const {
+    // A node is the last child when its shown subtree ends where its
+    // parent's does (`m_ndesc` counts shown descendants, 0 when collapsed).
+    std::vector<bool> flags;
+    t_index idx = tvidx;
+    while (idx > 0) {
+        const t_tvnode& node = (*m_nodes)[idx];
+        const t_index pidx = idx - node.m_rel_pidx;
+        const t_tvnode& parent = (*m_nodes)[pidx];
+        flags.push_back(idx + node.m_ndesc == pidx + parent.m_ndesc);
+        idx = pidx;
+    }
+
+    std::reverse(flags.begin(), flags.end());
+    return flags;
+}
+// [perspective-fortis] END
 
 void
 t_traversal::populate_root_children(const t_stnode_vec& rchildren) {
@@ -71,6 +140,9 @@ t_traversal::populate_root_children(const std::shared_ptr<const t_stree>& tree
 ) {
     t_stnode_vec rchildren;
     tree->get_child_nodes(0, rchildren);
+    if (m_skip_null_groups) { // [perspective-fortis]
+        drop_null_groups(rchildren);
+    }
     populate_root_children(rchildren);
 }
 
@@ -87,7 +159,7 @@ t_traversal::expand_node(t_index exp_idx) {
     }
 
     t_stnode_vec tchildren;
-    m_tree->get_child_nodes(exp_tvnode.m_tnid, tchildren);
+    get_traversable_child_nodes(exp_tvnode.m_tnid, tchildren); // [perspective-fortis]
     t_index n_changed = tchildren.size();
     std::vector<t_tvnode> children = std::vector<t_tvnode>(n_changed);
 
@@ -136,7 +208,7 @@ t_traversal::expand_node(
     }
 
     t_stnode_vec tchildren;
-    m_tree->get_child_nodes(exp_tvnode.m_tnid, tchildren);
+    get_traversable_child_nodes(exp_tvnode.m_tnid, tchildren); // [perspective-fortis]
     t_index n_changed = tchildren.size();
     t_index count = 0;
     std::vector<t_index> sorted_idx(n_changed);
@@ -245,6 +317,13 @@ t_traversal::add_node(
     t_index insert_level_idx,
     t_ctx2* ctx2
 ) {
+    // [perspective-fortis] A null group never enters the traversal, and
+    // neither does anything below it.
+    if (m_skip_null_groups
+        && is_null_group(m_tree->get_node(indices[insert_level_idx]))) {
+        return;
+    }
+
     std::vector<t_index> tv_indices;
     t_index collapsed_ancestor = INVALID_INDEX;
 
@@ -364,7 +443,8 @@ t_traversal::get_view_nodes(t_index bidx, t_index eidx) const {
         vec[idx].m_expanded = static_cast<t_index>(tv_node.m_expanded);
         vec[idx].m_depth = tv_node.m_depth;
         t_index tree_idx = get_tree_index(i);
-        vec[idx].m_has_children = m_tree->get_num_children(tree_idx) > 0;
+        vec[idx].m_has_children =
+            get_num_traversable_children(tree_idx) > 0; // [perspective-fortis]
     }
     return vec;
 }
@@ -592,7 +672,8 @@ t_traversal::get_flattened_tree(t_index idx, t_depth stop_depth) const {
         t_ftreenode rnode;
         rnode.m_idx = c_node.m_tnid;
         if (curdepth < stop_depth) {
-            t_index nchild = m_tree->get_num_children(rnode.m_idx);
+            t_index nchild =
+                get_num_traversable_children(rnode.m_idx); // [perspective-fortis]
             rnode.m_fcidx = rvec_idx;
             rnode.m_nchild = nchild;
             rnode.m_depth = c_node.m_depth;
