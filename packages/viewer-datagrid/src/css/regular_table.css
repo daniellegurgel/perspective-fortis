@@ -604,8 +604,10 @@ regular-table tbody th:has(> .psp-row-controls) {
  * after a column name, each with its own glyph, and a small tooltip under the
  * button (from `data-tooltip`), on hover and on keyboard focus, after a short
  * wait. The cell lets the tooltip out of its box (the table's own clip still
- * holds). Themeable with `--psp-column-control--*` / `--psp-tooltip--*`. */
-regular-table thead th:has(> .psp-column-controls) {
+ * holds). Themeable with `--psp-column-control--*` / `--psp-tooltip--*`.
+ * The selector outweighs `:host regular-table table thead th`, which hides
+ * whatever leaves a header cell. */
+regular-table table thead tr th:has(> .psp-column-controls) {
     overflow: visible;
 }
 
