@@ -44,9 +44,12 @@ import type {
     Align,
     RowAction,
     RowControls,
+    ColumnAction,
+    ColumnControls,
 } from "../types.js";
 import { RegularTableElement } from "regular-table";
 import { apply_row_controls } from "../style_handlers/table_cell/row_controls.js"; // [perspective-fortis]
+import { apply_column_controls } from "../style_handlers/table_cell/column_controls.js"; // [perspective-fortis]
 
 type RenderTarget = "shadow" | "light";
 
@@ -89,6 +92,8 @@ export class HTMLPerspectiveViewerDatagridPluginElement
     _row_selection: boolean = false;
     _selected_rows: Set<string> = new Set();
     _row_actions: RowAction[] = [];
+    // [perspective-fortis] Column header controls, set by `setColumnControls()`.
+    _column_actions: ColumnAction[] = [];
     _column_overrides: Map<string, number> = new Map();
     _initialized?: boolean;
     _reset_scroll_top?: boolean;
@@ -375,6 +380,17 @@ export class HTMLPerspectiveViewerDatagridPluginElement
      */
     async setRowControls(controls: RowControls): Promise<void> {
         apply_row_controls.call(this, controls);
+        if (this._initialized) {
+            await this.regular_table.draw({ preserve_width: true });
+        }
+    }
+
+    /**
+     * [perspective-fortis] Set the host-driven column header action buttons
+     * and redraw — see `ColumnControls`.
+     */
+    async setColumnControls(controls: ColumnControls): Promise<void> {
+        apply_column_controls.call(this, controls);
         if (this._initialized) {
             await this.regular_table.draw({ preserve_width: true });
         }

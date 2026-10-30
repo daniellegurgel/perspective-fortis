@@ -599,6 +599,98 @@ regular-table tbody th:has(> .psp-row-controls) {
     height: 100%;
     pointer-events: none;
 }
+
+/* Column controls (column_controls.ts), 2026-10-30: the host's buttons right
+ * after a column name, each with its own glyph, and a small tooltip under the
+ * button (from `data-tooltip`), on hover and on keyboard focus, after a short
+ * wait. The cell lets the tooltip out of its box (the table's own clip still
+ * holds). Themeable with `--psp-column-control--*` / `--psp-tooltip--*`. */
+regular-table thead th:has(> .psp-column-controls) {
+    overflow: visible;
+}
+
+.psp-column-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--psp-column-control--gap, 4px);
+    margin-left: var(--psp-column-control--text-gap, 6px);
+    vertical-align: middle;
+}
+
+.psp-column-action {
+    position: relative;
+    box-sizing: border-box;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: var(--psp-column-control--size, 14px);
+    height: var(--psp-column-control--size, 14px);
+    margin: 0;
+    padding: 0;
+    border: none;
+    background-color: transparent;
+    color: var(--psp-column-control--color, var(--psp--color));
+    font: inherit;
+    line-height: 0;
+    cursor: pointer;
+}
+
+.psp-column-action:hover {
+    color: var(--psp-column-control--hover-color, var(--psp-active--color));
+}
+
+.psp-column-action:focus-visible {
+    outline: 1px solid var(--psp-active--color);
+    outline-offset: 1px;
+}
+
+/* The glyph (SVG or image) fills the button. */
+.psp-column-action > svg,
+.psp-column-action > img {
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* The tooltip: right-aligned to the button, so it never runs off the last
+ * column; shown after `--psp-tooltip--delay`, hidden at once. */
+.psp-column-action::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + var(--psp-tooltip--offset, 6px));
+    right: 0;
+    z-index: 2;
+    padding: var(--psp-tooltip--padding, 2px 6px);
+    border: 1px solid
+        var(
+            --psp-tooltip--border-color,
+            var(--psp-inactive--border-color, #8b868045)
+        );
+    border-radius: var(--psp-tooltip--radius, 3px);
+    background-color: var(--psp-tooltip--background-color, #ffffff);
+    box-shadow: var(--psp-tooltip--shadow, 0 1px 3px rgba(0, 0, 0, 0.18));
+    color: var(--psp-tooltip--color, var(--psp--color));
+    font-size: var(--psp-tooltip--font-size, 11px);
+    font-weight: var(--psp-tooltip--font-weight, 400);
+    line-height: 1.4;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+        opacity 120ms ease,
+        visibility 0s linear 120ms;
+}
+
+.psp-column-action:hover::after,
+.psp-column-action:focus-visible::after {
+    opacity: 1;
+    visibility: visible;
+    transition:
+        opacity 120ms ease var(--psp-tooltip--delay, 400ms),
+        visibility 0s linear var(--psp-tooltip--delay, 400ms);
+}
 /* [perspective-fortis] END */
 
 .psp-align-right {

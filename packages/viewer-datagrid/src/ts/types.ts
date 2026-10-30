@@ -480,6 +480,33 @@ export interface RowAction {
     icon: string;
 }
 
+/**
+ * [perspective-fortis] Host-driven action buttons in the header of chosen
+ * columns, right after the column name, set with `setColumnControls()` on
+ * the plugin element. Clicking one dispatches `perspective-column-action`
+ * (`{ action, column, column_path, rect }`, `rect` being the button's
+ * viewport box); the host decides what it opens there. Like `RowControls`,
+ * not part of `plugin_config`.
+ */
+export interface ColumnControls {
+    actions?: ColumnAction[];
+}
+
+/** [perspective-fortis] A column header action button (see `ColumnControls`). */
+export interface ColumnAction {
+    /** Sent back as `action` in `perspective-column-action`. */
+    id: string;
+    /** Accessible name, and the tooltip shown on hover and keyboard focus. */
+    label: string;
+    /** Markup of the glyph drawn inside the button (SVG, or an `<img>`). */
+    icon: string;
+    /**
+     * The column names whose header shows it — in every `split_by` group, as
+     * the column settings do.
+     */
+    columns: string[];
+}
+
 export type Schema = Record<string, ColumnType>;
 
 // Model object stored on regular-table
@@ -569,6 +596,8 @@ export interface DatagridModel {
     _selected_rows: Set<string>;
     /** [perspective-fortis] `RowControls.actions`, mirrored. */
     _row_actions: RowAction[];
+    /** [perspective-fortis] `ColumnControls.actions`, mirrored. */
+    _column_actions: ColumnAction[];
     _tree_selection_id?: unknown[];
     _last_insert_configs?: ViewConfigUpdate[];
     _selection_state: SelectionState;
@@ -670,10 +699,12 @@ export interface DatagridPluginElement extends HTMLElement {
     _row_height?: number;
     _zebra_rows: number;
     _zebra_color?: string;
-    // [perspective-fortis] See `RowControls` / `setRowControls()`.
+    // [perspective-fortis] See `RowControls` / `setRowControls()` and
+    // `ColumnControls` / `setColumnControls()`.
     _row_selection?: boolean;
     _selected_rows?: Set<string>;
     _row_actions?: RowAction[];
+    _column_actions?: ColumnAction[];
     _column_overrides: Map<string, number>;
     _initialized?: boolean;
     _reset_scroll_top?: boolean;

@@ -16,6 +16,7 @@ import { CollectedHeaderRow } from "./types.js";
 import type { HTMLPerspectiveViewerElement } from "@perspective-dev/viewer";
 import { apply_borders, classify_header_cell } from "./border_model.js";
 import { corner_boundary_x } from "./group_header.js";
+import { render_column_controls } from "./table_cell/column_controls.js"; // [perspective-fortis]
 
 /**
  * Apply selected column styling in response to column settings toggle events.
@@ -219,5 +220,13 @@ export function styleColumnHeaderRow(
                 metadata.column_header?.[split_by_len] === selectedColumn;
             td.classList.toggle("psp-menu-open", isOpen);
         }
+
+        // [perspective-fortis] The host's column header buttons.
+        render_column_controls(
+            model,
+            td,
+            metadata.column_header,
+            !is_corner && !is_menu_row,
+        );
     }
 }

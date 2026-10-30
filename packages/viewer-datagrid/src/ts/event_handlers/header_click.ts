@@ -17,6 +17,10 @@ import {
     handle_row_control_click,
     is_row_control_event,
 } from "../style_handlers/table_cell/row_controls.js";
+import {
+    handle_column_control_click,
+    is_column_control_event,
+} from "../style_handlers/table_cell/column_controls.js";
 import type { RegularTable, DatagridModel } from "../types.js";
 import type { HTMLPerspectiveViewerElement } from "@perspective-dev/viewer";
 
@@ -31,9 +35,9 @@ export function createMousedownListener(
             return;
         }
 
-        // [perspective-fortis] A row control is handled on `click`; pressing
-        // it must not expand/collapse its row.
-        if (is_row_control_event(event)) {
+        // [perspective-fortis] A row or column control is handled on `click`;
+        // pressing it must not expand/collapse its row, nor sort its column.
+        if (is_row_control_event(event) || is_column_control_event(event)) {
             return;
         }
 
@@ -114,7 +118,10 @@ export function createClickListener(regularTable: RegularTable): EventListener {
         // [perspective-fortis] Before the button check: a keyboard-activated
         // control (Space / Enter on the focused button) fires a `click` with
         // no mouse button.
-        if (handle_row_control_click(regularTable, event)) {
+        if (
+            handle_row_control_click(regularTable, event) ||
+            handle_column_control_click(regularTable, event)
+        ) {
             event.stopImmediatePropagation();
             return;
         }
