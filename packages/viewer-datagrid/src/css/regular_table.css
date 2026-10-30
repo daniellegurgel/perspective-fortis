@@ -611,6 +611,17 @@ regular-table table thead tr th:has(> .psp-column-controls) {
     overflow: visible;
 }
 
+/* regular-table moves cells with `transform`, so each cell paints in its own
+ * layer and the body rows, later in the page, cover a header cell's tooltip.
+ * Only while the tooltip is open, its header cell goes one layer up. */
+regular-table
+    table
+    thead
+    tr
+    th:has(> .psp-column-controls .psp-column-action:is(:hover, :focus-visible)) {
+    z-index: 1;
+}
+
 .psp-column-controls {
     display: inline-flex;
     align-items: center;
@@ -655,13 +666,15 @@ regular-table table thead tr th:has(> .psp-column-controls) {
     pointer-events: none;
 }
 
-/* The tooltip: right-aligned to the button, so it never runs off the last
- * column; shown after `--psp-tooltip--delay`, hidden at once. */
+/* The tooltip: centred under the button (to its left lies the tree column,
+ * whose sticky cells paint over anything that crosses into them); shown after
+ * `--psp-tooltip--delay`, hidden at once. */
 .psp-column-action::after {
     content: attr(data-tooltip);
     position: absolute;
     top: calc(100% + var(--psp-tooltip--offset, 6px));
-    right: 0;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 2;
     padding: var(--psp-tooltip--padding, 2px 6px);
     border: 1px solid
