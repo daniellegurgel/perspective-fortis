@@ -412,14 +412,15 @@ regular-table:not(.flat-group-rollup-mode) {
         );
     }
 
-    /* Tree connectors (with `group_by_hide_null`; classes from
-     * row_header.ts). In the parent's column a row draws ├ — └ when it is
-     * the last child, so the line stops at it — and the ─ goes on into its
-     * label up to its box (or, on a leaf, to where a box would end). A column
-     * whose list already ended draws nothing; one whose list goes on draws │
-     * over the whole row (stock trees shift it up 10px, which only works on
-     * their merged, many-row spacer cells); an open box drops a line to its
-     * children's │.
+    /* Tree guide lines (with `group_by_hide_null`; classes from
+     * row_header.ts). In the parent's column every child row draws │ over the
+     * whole row, the last child too, so the line runs down the parent's
+     * children and stops under the last one. A column whose list already
+     * ended draws nothing; one whose list goes on draws │ (stock trees shift
+     * it up 10px, which only works on their merged, many-row spacer cells);
+     * an open box drops a line to its children's │. No ─ into the label: the
+     * indent already says whose child a row is (2026-10-30; until then a row
+     * drew ├ or └ and a ─ up to its box or name).
      *
      * Each line is a box of its own — an absolutely placed pseudo-element
      * with a 1px border — not a background image. Layout puts every box edge
@@ -427,15 +428,13 @@ regular-table:not(.flat-group-rollup-mode) {
      * a 1px border is one device pixel at any zoom. Images do not: on a
      * fractional pixel ratio (Windows at 125%/150%) a 1px line covers 1.25 or
      * 1.5 device pixels, and each way of drawing one rounds to its own side —
-     * the │ under a box came out half a pixel off the drop above it, and a ─
-     * stuck out to the left of its │. */
+     * the │ under a box came out half a pixel off the drop above it. */
 
     /* Row separators run across the indent too — no staircase: connector
      * cells take the label cells' 1px top border, and the │ starts above it,
-     * so it runs through every separator unbroken. Lines leave the cell
-     * (the ─ goes into the label), hence `overflow: visible`. */
-    tbody
-        th.psp-tree-spacer:is(.psp-tree-pipe, .psp-tree-gap, .psp-tree-branch) {
+     * so it runs through every separator unbroken. The │ leaves the cell by
+     * that pixel, hence `overflow: visible`. */
+    tbody th.psp-tree-spacer:is(.psp-tree-pipe, .psp-tree-gap) {
         border-style: solid;
         border-width: 0;
         border-top-width: 1px;
@@ -443,8 +442,7 @@ regular-table:not(.flat-group-rollup-mode) {
         overflow: visible;
     }
 
-    tbody th.psp-tree-spacer:is(.psp-tree-pipe, .psp-tree-branch)::before,
-    tbody th.psp-tree-spacer.psp-tree-branch::after,
+    tbody th.psp-tree-spacer.psp-tree-pipe::before,
     .psp-tree-connected.psp-tree-label-collapse::after {
         content: "";
         position: absolute;
@@ -453,38 +451,11 @@ regular-table:not(.flat-group-rollup-mode) {
     }
 
     /* │ — from above the cell's top separator to its bottom. */
-    tbody th.psp-tree-spacer:is(.psp-tree-pipe, .psp-tree-branch)::before {
+    tbody th.psp-tree-spacer.psp-tree-pipe::before {
         left: var(--psp-tree-line--x);
         top: -1px;
         bottom: 0;
         border-left-width: 1px;
-    }
-
-    /* └ — the │ stops on the ─: half a pixel into it, so it meets it whatever
-     * way the pixel rounds, and never sticks out below it. */
-    tbody th.psp-tree-spacer.psp-tree-branch-last::before {
-        bottom: auto;
-        height: calc(50% + 1.5px);
-    }
-
-    /* ─ — on the row's middle below its top separator (the centre of the
-     * box), from the │ into the label: past its 1px left border, up to its
-     * box or, on a leaf, to where a box would end. It is drawn by this cell
-     * over the start of the next one, so `z-index` keeps it above the label's
-     * background. */
-    tbody th.psp-tree-spacer.psp-tree-branch::after {
-        left: var(--psp-tree-line--x);
-        right: calc(-1px - var(--psp-tree-toggle--inset, 4px));
-        top: 50%;
-        border-top-width: 1px;
-        z-index: 1;
-    }
-
-    tbody th.psp-tree-spacer.psp-tree-branch:has(+ th.psp-tree-leaf)::after {
-        right: calc(
-            -1px - var(--psp-tree-toggle--inset, 4px) -
-                var(--psp-tree-toggle--size, 13px)
-        );
     }
 
     /* The drop from an open box to its children's │. Absolute boxes are
