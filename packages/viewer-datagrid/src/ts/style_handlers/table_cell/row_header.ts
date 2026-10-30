@@ -65,22 +65,25 @@ export function cell_style_row_header(
 
     // [perspective-fortis] Tree guide lines, from the row's "last child"
     // flags (`_tree_last`, depth 1 first; the label sits at x = depth). In the
-    // column of its parent a row draws │ over the whole row; in each column
+    // column of its parent a row draws │ over the whole row, or └ with a
+    // short ─ when it is the last child, closing the line; in each column
     // further left, │ while that ancestor's list goes on below, else nothing.
-    // No ─ into the label (2026-10-30; until then the parent's column drew
-    // ├ or └ and a ─ up to the row's box or name). A connected label — the
-    // root's too — drops a line from its open box.
+    // Only the last child has a ─ (2026-10-30; until then every child drew
+    // ├ or └). A connected label — the root's too — drops a line from its
+    // open box.
     const last_flags = model._tree_last?.[
         (metadata.y ?? 0) - (metadata.y0 ?? 0)
     ];
     const connected = !is_flat && Array.isArray(last_flags);
     const connect = connected && label_x > 0;
     const in_parent_column = x === label_x - 1;
+    const is_last = connect && is_spacer && in_parent_column && !!last_flags[x];
     const is_pipe =
-        connect && is_spacer && (in_parent_column || !last_flags[x]);
+        connect && is_spacer && (in_parent_column ? !is_last : !last_flags[x]);
     const is_gap =
         connect && is_spacer && !in_parent_column && !!last_flags[x];
     td.classList.toggle("psp-tree-pipe", is_pipe);
+    td.classList.toggle("psp-tree-last", is_last);
     td.classList.toggle("psp-tree-gap", is_gap);
     td.classList.toggle("psp-tree-connected", connected && is_label);
 
