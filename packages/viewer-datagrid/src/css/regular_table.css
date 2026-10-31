@@ -421,6 +421,7 @@ regular-table:not(.flat-group-rollup-mode) {
      * to its children's │. Only the last child has a ─ (2026-10-30: until then
      * every child drew one, ├ or └, up to its box or, on a leaf, up to its
      * name — twice as long; the indent already says whose child a row is).
+     * With `setTreeLineDepth()`, the columns past that depth are all gaps.
      *
      * Each line is a box of its own — an absolutely placed pseudo-element
      * with a 1px border — not a background image. Layout puts every box edge
@@ -444,7 +445,7 @@ regular-table:not(.flat-group-rollup-mode) {
 
     tbody th.psp-tree-spacer:is(.psp-tree-pipe, .psp-tree-last)::before,
     tbody th.psp-tree-spacer.psp-tree-last::after,
-    .psp-tree-connected.psp-tree-label-collapse::after {
+    .psp-tree-drop.psp-tree-label-collapse::after {
         content: "";
         position: absolute;
         border: 0 solid var(--psp-tree-line--c);
@@ -479,13 +480,15 @@ regular-table:not(.flat-group-rollup-mode) {
         z-index: 1;
     }
 
-    /* The drop from an open box to its children's │. Absolute boxes are
-     * placed from the padding edge, inside the label's 1px left border. */
+    /* The drop from an open box to its children's │ — not from a box deeper
+     * than `setTreeLineDepth()` (no `psp-tree-drop`), whose children draw no
+     * │. Absolute boxes are placed from the padding edge, inside the label's
+     * 1px left border. */
     .psp-tree-connected.psp-tree-label-collapse {
         background-image: none;
     }
 
-    .psp-tree-connected.psp-tree-label-collapse::after {
+    .psp-tree-drop.psp-tree-label-collapse::after {
         left: calc(var(--psp-tree-line--x) - 1px);
         top: calc(50% + var(--psp-tree-toggle--size, 13px) / 2);
         bottom: 0;

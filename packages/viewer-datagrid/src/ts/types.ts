@@ -538,6 +538,11 @@ export interface DatagridModel {
     /// [perspective-fortis] Per-row "last child" flags of each path node,
     /// depth 1 first, for the tree connectors (`group_by_hide_null` only).
     _tree_last?: boolean[][];
+    /// [perspective-fortis] How many levels of the tree draw guide lines,
+    /// set with `setTreeLineDepth()`: the lines of the groups at depth 0 (the
+    /// grand total) up to `depth - 1`, the ones in the first `depth` indent
+    /// columns. `undefined` = every level.
+    _tree_line_depth?: number;
     _plugin_background: number[];
     _color: ColorRecord;
     _pos_fg_color: ColorRecord;
@@ -699,12 +704,13 @@ export interface DatagridPluginElement extends HTMLElement {
     _row_height?: number;
     _zebra_rows: number;
     _zebra_color?: string;
-    // [perspective-fortis] See `RowControls` / `setRowControls()` and
-    // `ColumnControls` / `setColumnControls()`.
+    // [perspective-fortis] See `RowControls` / `setRowControls()`,
+    // `ColumnControls` / `setColumnControls()` and `setTreeLineDepth()`.
     _row_selection?: boolean;
     _selected_rows?: Set<string>;
     _row_actions?: RowAction[];
     _column_actions?: ColumnAction[];
+    _tree_line_depth?: number;
     _column_overrides: Map<string, number>;
     _initialized?: boolean;
     _reset_scroll_top?: boolean;

@@ -94,6 +94,9 @@ export class HTMLPerspectiveViewerDatagridPluginElement
     _row_actions: RowAction[] = [];
     // [perspective-fortis] Column header controls, set by `setColumnControls()`.
     _column_actions: ColumnAction[] = [];
+    // [perspective-fortis] Levels of the tree with guide lines, set by
+    // `setTreeLineDepth()`; `undefined` = every level.
+    _tree_line_depth?: number;
     _column_overrides: Map<string, number> = new Map();
     _initialized?: boolean;
     _reset_scroll_top?: boolean;
@@ -391,6 +394,26 @@ export class HTMLPerspectiveViewerDatagridPluginElement
      */
     async setColumnControls(controls: ColumnControls): Promise<void> {
         apply_column_controls.call(this, controls);
+        if (this._initialized) {
+            await this.regular_table.draw({ preserve_width: true });
+        }
+    }
+
+    /**
+     * [perspective-fortis] Draw the tree guide lines only on the first
+     * `depth` levels — the grand total's (depth 0) up to `depth - 1`'s — and
+     * redraw; deeper groups keep their indent and box, with no lines. Not a
+     * whole number from 0 up, or `undefined`: every level (stock).
+     */
+    async setTreeLineDepth(depth?: number): Promise<void> {
+        const valid =
+            depth !== undefined && Number.isInteger(depth) && depth >= 0
+                ? depth
+                : undefined;
+        this._tree_line_depth = valid;
+        if (this.model) {
+            this.model._tree_line_depth = valid;
+        }
         if (this._initialized) {
             await this.regular_table.draw({ preserve_width: true });
         }

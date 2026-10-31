@@ -71,21 +71,38 @@ export function cell_style_row_header(
     // Only the last child has a ─ (2026-10-30; until then every child drew
     // ├ or └). A connected label — the root's too — drops a line from its
     // open box.
+    //
+    // Column x carries the line of the group at depth x. With
+    // `setTreeLineDepth(depth)` (2026-10-31) only the first `depth` columns
+    // do: a deeper column draws nothing (a gap), and a deeper open box drops
+    // no line.
     const last_flags = model._tree_last?.[
         (metadata.y ?? 0) - (metadata.y0 ?? 0)
     ];
     const connected = !is_flat && Array.isArray(last_flags);
     const connect = connected && label_x > 0;
+    const line_depth = model._tree_line_depth ?? Infinity;
+    const lined = x < line_depth;
     const in_parent_column = x === label_x - 1;
-    const is_last = connect && is_spacer && in_parent_column && !!last_flags[x];
+    const is_last =
+        connect && is_spacer && lined && in_parent_column && !!last_flags[x];
     const is_pipe =
-        connect && is_spacer && (in_parent_column ? !is_last : !last_flags[x]);
+        connect &&
+        is_spacer &&
+        lined &&
+        (in_parent_column ? !is_last : !last_flags[x]);
     const is_gap =
-        connect && is_spacer && !in_parent_column && !!last_flags[x];
+        connect &&
+        is_spacer &&
+        (!lined || (!in_parent_column && !!last_flags[x]));
     td.classList.toggle("psp-tree-pipe", is_pipe);
     td.classList.toggle("psp-tree-last", is_last);
     td.classList.toggle("psp-tree-gap", is_gap);
     td.classList.toggle("psp-tree-connected", connected && is_label);
+    td.classList.toggle(
+        "psp-tree-drop",
+        connected && is_label && label_x < line_depth,
+    );
 
     // [perspective-fortis] Selection / action controls (opt-in per grid).
     render_row_controls(model, td, metadata, is_label && !is_flat);

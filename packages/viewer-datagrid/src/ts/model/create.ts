@@ -331,6 +331,7 @@ export async function createModel(
         _selected_rows: this?._selected_rows ?? new Set<string>(),
         _row_actions: this?._row_actions ?? [],
         _column_actions: this?._column_actions ?? [],
+        _tree_line_depth: this?._tree_line_depth,
         _column_overrides: this?._column_overrides ?? new Map<string, number>(),
         _projected: new Map(),
         _num_row_headers: 0,
