@@ -28,6 +28,7 @@ import {
     type DatagridModel,
     type DatagridPluginElement,
     type RegularTable,
+    type ResolvedRowFormat,
     type Schema,
     type EditMode,
 } from "../types.js";
@@ -331,6 +332,8 @@ export async function createModel(
         _selected_rows: this?._selected_rows ?? new Set<string>(),
         _row_actions: this?._row_actions ?? [],
         _column_actions: this?._column_actions ?? [],
+        _row_formats:
+            this?._row_formats ?? new Map<string, ResolvedRowFormat>(),
         _tree_line_depth: this?._tree_line_depth,
         _column_overrides: this?._column_overrides ?? new Map<string, number>(),
         _projected: new Map(),

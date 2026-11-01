@@ -277,6 +277,8 @@ export function createDataListener(
                         path_parts[this._config.split_by.length],
                         x,
                         columns_config,
+                        false,
+                        columns?.__ROW_PATH__?.[i] ?? this._ids?.[i],
                     ) as string | HTMLElement;
 
                     return wrap ? wrap_cell(cell) : cell;

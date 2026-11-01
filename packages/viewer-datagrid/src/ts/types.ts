@@ -507,6 +507,47 @@ export interface ColumnAction {
     columns: string[];
 }
 
+/**
+ * [perspective-fortis] Host-driven per-row number formats on tree rows, keyed
+ * by each row's `__ROW_PATH__`, set with `setRowFormats()` on the plugin
+ * element. When a row has a format, the Datagrid formats its numeric body
+ * cells with it instead of the column's formatter. Like `RowControls` and
+ * `ColumnControls`, not part of `plugin_config`.
+ */
+export interface RowFormats {
+    formats?: RowFormat[];
+}
+
+/** [perspective-fortis] A per-row number format (see `RowFormats`). */
+export interface RowFormat {
+    /** Row path (`__ROW_PATH__`), from depth 1 to the row. */
+    path: unknown[];
+    /**
+     * Number of fraction digits (`0` for integer). Defaults to `1` when
+     * `percent` is `true`, `2` otherwise.
+     */
+    decimals?: number;
+    /** Text placed before the formatted number (e.g. `"R$ "`). */
+    prefix?: string;
+    /**
+     * Text placed after the formatted number (e.g. `" dias"`, `" mi"`).
+     * Defaults to `"%"` when `percent` is `true`.
+     */
+    suffix?: string;
+    /**
+     * Whether the row is a percentage (defaults `decimals` to `1` and
+     * `suffix` to `"%"`).
+     */
+    percent?: boolean;
+}
+
+/** [perspective-fortis] Resolved entry stored in `DatagridModel._row_formats`. */
+export interface ResolvedRowFormat {
+    decimals: number;
+    prefix: string;
+    suffix: string;
+}
+
 export type Schema = Record<string, ColumnType>;
 
 // Model object stored on regular-table
@@ -603,6 +644,8 @@ export interface DatagridModel {
     _row_actions: RowAction[];
     /** [perspective-fortis] `ColumnControls.actions`, mirrored. */
     _column_actions: ColumnAction[];
+    /** [perspective-fortis] `RowFormats.formats`, keyed by JSON `row_path`. */
+    _row_formats: Map<string, ResolvedRowFormat>;
     _tree_selection_id?: unknown[];
     _last_insert_configs?: ViewConfigUpdate[];
     _selection_state: SelectionState;
@@ -705,11 +748,13 @@ export interface DatagridPluginElement extends HTMLElement {
     _zebra_rows: number;
     _zebra_color?: string;
     // [perspective-fortis] See `RowControls` / `setRowControls()`,
-    // `ColumnControls` / `setColumnControls()` and `setTreeLineDepth()`.
+    // `ColumnControls` / `setColumnControls()`, `RowFormats` /
+    // `setRowFormats()` and `setTreeLineDepth()`.
     _row_selection?: boolean;
     _selected_rows?: Set<string>;
     _row_actions?: RowAction[];
     _column_actions?: ColumnAction[];
+    _row_formats?: Map<string, ResolvedRowFormat>;
     _tree_line_depth?: number;
     _column_overrides: Map<string, number>;
     _initialized?: boolean;

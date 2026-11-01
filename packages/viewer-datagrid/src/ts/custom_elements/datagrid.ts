@@ -25,7 +25,7 @@ import column_config_schema, {
 } from "../plugin/column_config_schema.js";
 import plugin_config_schema from "../plugin/plugin_config_schema.js";
 import datagridStyles from "../../../dist/css/perspective-viewer-datagrid.css";
-import { format_raw } from "../data_listener/format_cell.js";
+import { apply_row_formats, format_raw } from "../data_listener/format_cell.js";
 import { sourceColumn } from "@perspective-dev/viewer/src/ts/column-format.js";
 
 import type { View, ViewWindow } from "@perspective-dev/client";
@@ -41,9 +41,11 @@ import type {
     DatagridPluginConfig,
     ColumnsConfig,
     ResolvedColumnsConfig,
+    ResolvedRowFormat,
     Align,
     RowAction,
     RowControls,
+    RowFormats,
     ColumnAction,
     ColumnControls,
 } from "../types.js";
@@ -94,6 +96,8 @@ export class HTMLPerspectiveViewerDatagridPluginElement
     _row_actions: RowAction[] = [];
     // [perspective-fortis] Column header controls, set by `setColumnControls()`.
     _column_actions: ColumnAction[] = [];
+    // [perspective-fortis] Per-row number formats, set by `setRowFormats()`.
+    _row_formats: Map<string, ResolvedRowFormat> = new Map();
     // [perspective-fortis] Levels of the tree with guide lines, set by
     // `setTreeLineDepth()`; `undefined` = every level.
     _tree_line_depth?: number;
@@ -394,6 +398,17 @@ export class HTMLPerspectiveViewerDatagridPluginElement
      */
     async setColumnControls(controls: ColumnControls): Promise<void> {
         apply_column_controls.call(this, controls);
+        if (this._initialized) {
+            await this.regular_table.draw({ preserve_width: true });
+        }
+    }
+
+    /**
+     * [perspective-fortis] Set the host-driven per-row number formats and
+     * redraw — see `RowFormats`.
+     */
+    async setRowFormats(formats: RowFormats): Promise<void> {
+        apply_row_formats.call(this, formats);
         if (this._initialized) {
             await this.regular_table.draw({ preserve_width: true });
         }
