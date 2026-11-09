@@ -72,7 +72,12 @@ export function createMousedownListener(
             await viewer.toggleColumnSettings(`${column_name}`, {
                 panel: model._panel,
             });
-        } else if (target.classList.contains("psp-sort-enabled")) {
+        } else if (
+            // [perspective-fortis] `setHeaderSort(false)`: a header click
+            // never sorts, even on a header drawn before the switch.
+            model._header_sort &&
+            target.classList.contains("psp-sort-enabled")
+        ) {
             sortHandler(model, regularTable, viewer, mouseEvent, target);
         }
     };

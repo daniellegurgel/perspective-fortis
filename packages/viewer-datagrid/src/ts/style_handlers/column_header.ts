@@ -203,9 +203,11 @@ export function styleColumnHeaderRow(
                 !is_corner &&
                 metadata.column_header_y === model._config.split_by.length + 1,
         );
+        // [perspective-fortis] `setHeaderSort(false)` turns header sorting off.
         td.classList.toggle(
             "psp-sort-enabled",
-            (is_string || is_numeric || is_date || is_datetime) &&
+            model._header_sort &&
+                (is_string || is_numeric || is_date || is_datetime) &&
                 !is_corner &&
                 metadata.column_header_y === model._config.split_by.length,
         );

@@ -101,6 +101,9 @@ export class HTMLPerspectiveViewerDatagridPluginElement
     // [perspective-fortis] Levels of the tree with guide lines, set by
     // `setTreeLineDepth()`; `undefined` = every level.
     _tree_line_depth?: number;
+    // [perspective-fortis] Whether clicking a column header sorts by it, set
+    // by `setHeaderSort()`; `true` = stock.
+    _header_sort: boolean = true;
     _column_overrides: Map<string, number> = new Map();
     _initialized?: boolean;
     _reset_scroll_top?: boolean;
@@ -428,6 +431,25 @@ export class HTMLPerspectiveViewerDatagridPluginElement
         this._tree_line_depth = valid;
         if (this.model) {
             this.model._tree_line_depth = valid;
+        }
+        if (this._initialized) {
+            await this.regular_table.draw({ preserve_width: true });
+        }
+    }
+
+    /**
+     * [perspective-fortis] Turn sorting by clicking a column header on
+     * (`true`, stock) or off (`false`) and redraw. Off, no column header is
+     * sortable — no `psp-sort-enabled` class, so no sort cursor — and a click
+     * on it does nothing: the rows keep the order the host's `sort` config
+     * gives them. For a table whose rows have no common unit to compare (each
+     * row its own format, see `setRowFormats()`), or whose order is the
+     * meaning itself (a chart of accounts, a catalog).
+     */
+    async setHeaderSort(enabled: boolean): Promise<void> {
+        this._header_sort = enabled;
+        if (this.model) {
+            this.model._header_sort = enabled;
         }
         if (this._initialized) {
             await this.regular_table.draw({ preserve_width: true });

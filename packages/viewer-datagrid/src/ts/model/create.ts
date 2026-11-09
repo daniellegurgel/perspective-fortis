@@ -335,6 +335,7 @@ export async function createModel(
         _row_formats:
             this?._row_formats ?? new Map<string, ResolvedRowFormat>(),
         _tree_line_depth: this?._tree_line_depth,
+        _header_sort: this?._header_sort ?? true,
         _column_overrides: this?._column_overrides ?? new Map<string, number>(),
         _projected: new Map(),
         _num_row_headers: 0,

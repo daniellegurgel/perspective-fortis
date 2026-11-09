@@ -584,6 +584,9 @@ export interface DatagridModel {
     /// grand total) up to `depth - 1`, the ones in the first `depth` indent
     /// columns. `undefined` = every level.
     _tree_line_depth?: number;
+    /// [perspective-fortis] Whether clicking a column header sorts by it,
+    /// set with `setHeaderSort()`; `true` = stock.
+    _header_sort: boolean;
     _plugin_background: number[];
     _color: ColorRecord;
     _pos_fg_color: ColorRecord;
@@ -749,13 +752,14 @@ export interface DatagridPluginElement extends HTMLElement {
     _zebra_color?: string;
     // [perspective-fortis] See `RowControls` / `setRowControls()`,
     // `ColumnControls` / `setColumnControls()`, `RowFormats` /
-    // `setRowFormats()` and `setTreeLineDepth()`.
+    // `setRowFormats()`, `setTreeLineDepth()` and `setHeaderSort()`.
     _row_selection?: boolean;
     _selected_rows?: Set<string>;
     _row_actions?: RowAction[];
     _column_actions?: ColumnAction[];
     _row_formats?: Map<string, ResolvedRowFormat>;
     _tree_line_depth?: number;
+    _header_sort?: boolean;
     _column_overrides: Map<string, number>;
     _initialized?: boolean;
     _reset_scroll_top?: boolean;
